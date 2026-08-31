@@ -1,0 +1,6 @@
+netscope.exe
+netscope.exe~
+*.log
+.freebuff/
+node_modules/
+*.tmp

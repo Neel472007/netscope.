@@ -1,65 +1,6 @@
 // NetScope Dashboard Application
-// Standalone mode: mock data when no server available
 (function () {
     'use strict';
-
-    // Mock fallback for GitHub Pages / standalone mode
-    var USE_MOCK = (window.location.protocol === 'file:' || !window.location.port || window.location.port === '443' || window.location.port === '80');
-    var _origFetch = window.fetch;
-    window.fetch = function(url, opts) {
-        if (USE_MOCK && typeof url === 'string' && url.startsWith('/api/')) {
-            return Promise.resolve({
-                ok: true,
-                json: function() { return Promise.resolve(mockAPI(url)); }
-            });
-        }
-        return _origFetch.apply(this, arguments);
-    };
-    window.fetch = window.fetch.bind(window);
-
-    function mockAPI(url) {
-        var target = 'example.com';
-        var m = url.match(/[?&]target=([^&]+)/);
-        if (m) target = decodeURIComponent(m[1]);
-        var dnsTime = 15000000 + Math.random()*30000000;
-        var tcpTime = 8000000 + Math.random()*15000000;
-        var httpTime = 50000000 + Math.random()*100000000;
-        if (url.includes('/diagnose')) {
-            return {
-                target: target,
-                health: { score: 85+Math.floor(Math.random()*15), status: 'Healthy', message: 'All layers responding normally', layers: [
-                    {layer:'DNS',status:'ok',latency:'31ms'},
-                    {layer:'TCP',status:'ok',latency:'8ms'},
-                    {layer:'HTTP',status:'ok',latency:'174ms'}
-                ]},
-                dns: {success:true,resolution_time_ms:dnsTime,ipv4_addresses:['93.184.216.34'],ipv6_addresses:['2606:2800:220:1:248:1893:25c8:1946'],resolvers_tested:3,all_resolved:true},
-                tcp: {connected:true,latency_ms:tcpTime,concurrent_connections:3,error_classification:'none'},
-                http: {success:true,status_code:200,status_text:'OK',response_time_ms:httpTime,total_duration_ms:httpTime,time_to_first_byte_ms:80000000,timing:{dns_ns:dnsTime,tcp_ns:tcpTime,tls_ns:45000000,ttfb_ms:80,total_ms:httpTime},headers:{'server':'nginx','content-type':'text/html'}},
-                root_cause: {layer:'none',severity:'info',message:'Network is healthy — all layers responding normally',confidence:97,evidence:'DNS resolved in 31ms, TCP connected in 8ms, HTTP returned 200 in 174ms',recommendation:'No action needed — all network layers are performing normally',suggestions:['No issues detected']},
-                packet_flow: {target:target,timing:{dns_ns:dnsTime,tcp_ns:tcpTime,tls_ns:45000000,http_ns:httpTime,total_ms:nsToMs(httpTime)},steps:[{layer:'DNS',status:'ok'},{layer:'TCP',status:'ok'},{layer:'TLS',status:'ok'},{layer:'HTTP',status:'ok'}]},
-                fingerprint: {target:target,confidence:85,detected:{server:'nginx/1.24.0',cdn:'Cloudflare',waf:'None',hosting:'Cloudflare Pages',framework:'None'},raw_headers:{'server':'nginx/1.24.0','cf-ray':'test123'}}
-            };
-        }
-        if (url.includes('/stream')) return {type:'complete',value:mockAPI('/api/diagnose?target='+target)};
-        if (url.includes('/dns')) return {success:true,resolution_time_ms:dnsTime,ipv4_addresses:['93.184.216.34'],resolvers:[]};
-        if (url.includes('/tcp')) return {connected:true,latency_ms:tcpTime};
-        if (url.includes('/http')) return {status_code:200,response_time_ms:httpTime};
-        if (url.includes('/health')) return {status:'healthy',uptime:'1h 23m',version:'v1.0.0'};
-        if (url.includes('/history')) return [];
-        if (url.includes('/tls')) return {subject:'CN='+target,issuer:'Let\'s Encrypt',not_before:'2026-01-01',not_after:'2026-12-31',protocol:'TLS 1.3',cipher:'TLS_AES_256_GCM_SHA388',key_size:256,chain:[],san:[]};
-        if (url.includes('/traceroute')) return {hops:[{ttl:1,ip:'192.168.1.1',hostname:'gateway',latency_ms:1},{ttl:2,ip:'10.0.0.1',hostname:'isp-router',latency_ms:5},{ttl:3,ip:'72.14.236.1',hostname:'google-gw',latency_ms:12},{ttl:4,ip:'142.250.80.46',hostname:'google.com',latency_ms:18}],complete:true};
-        if (url.includes('/portscan')) return {host:target,open_ports:[{port:80,state:'open',service:'HTTP'},{port:443,state:'open',service:'HTTPS'}],closed_ports:[22,21,25],filtered_ports:[]};
-        if (url.includes('/ping')) return {host:target,packets_sent:10,packets_received:10,loss_percent:0,avg_ms:18.5,min_ms:15.2,max_ms:24.1,stddev_ms:2.8,times:[15.2,16.8,17.1,18.3,18.9,19.2,20.1,21.5,22.8,24.1]};
-        if (url.includes('/benchmark')) return {target:target,rounds:10,results:{p50_ms:18.5,p95_ms:22.3,p99_ms:24.1,avg_ms:19.2,min_ms:15.2,max_ms:24.1,jitter_ms:2.8,consistency:'A'},grade:'A'};
-        if (url.includes('/stress')) return {target:target,total_requests:1000,successful:998,failed:2,avg_latency_ms:45,p50_ms:38,p99_ms:120,throughput_rps:2200};
-        if (url.includes('/fingerprint')) return {target:target,confidence:85,server:'nginx',cdn:'Cloudflare',framework:'None'};
-        if (url.includes('/packetflow')) return mockAPI('/api/diagnose?target='+target).packet_flow;
-        if (url.includes('/correlation')) return {target:target,chain:[{layer:'DNS',status:'ok'},{layer:'TCP',status:'ok'},{layer:'HTTP',status:'ok'}],root_cause:{layer:'none',message:'All healthy',confidence:97}};
-        if (url.includes('/export')||url.includes('/report')) return {html:'<h1>NetScope Report</h1><p>Report for '+target+'</p>'};
-        if (url.includes('/csrf-token')) return {token:'mock-csrf-token-12345'};
-        return {};
-    }
-
 
     // DOM Elements
     const targetInput = document.getElementById('targetInput');
@@ -218,6 +159,25 @@
     // ---- Diagnosis ----
 
     function runDiagnosis(target) {
+        // Mock fallback for GitHub Pages
+        if (window.__MOCK_MODE) {
+            if (!target || isRunning) return;
+            isRunning = true;
+            btnDiagnose.disabled = true;
+            btnText.style.display = "none";
+            btnSpinner.style.display = "";
+            resetUI();
+            showSections(true);
+            logActivity("Starting diagnosis: " + target, "running");
+            setTimeout(function() {
+                var result = window.__generateMockDiagnosis(target);
+                displayResult(result);
+                logActivity("Diagnosis complete (demo mode)", "ok");
+                finishLoading();
+            }, 500 + Math.random() * 1000);
+            return;
+        }
+
         if (!target || isRunning) return;
         isRunning = true;
 
@@ -444,8 +404,8 @@
 
         document.getElementById('rcSeverity').textContent = rc.severity.toUpperCase();
         document.getElementById('rcSeverity').className = 'rc-severity ' + rc.severity;
-        document.getElementById('rcCause').textContent = rc.message || rc.root_cause;
-        document.getElementById('rcConfidence').textContent = 'Confidence: ' + (rc.confidence > 1 ? Math.round(rc.confidence) : Math.round(rc.confidence * 100)) + '%';
+        document.getElementById('rcCause').textContent = rc.root_cause;
+        document.getElementById('rcConfidence').textContent = 'Confidence: ' + Math.round(rc.confidence * 100) + '%';
         document.getElementById('rcEvidence').textContent = 'Evidence: ' + rc.evidence;
         document.getElementById('rcRecommendation').textContent = 'Recommendation: ' + rc.recommendation;
     }
