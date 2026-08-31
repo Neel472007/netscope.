@@ -1599,3 +1599,186 @@ body.light .btn { color: var(--text-primary); }
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+
+/* ===== PREMIUM VISUAL EFFECTS ===== */
+
+/* Glassmorphism for cards */
+.health-card, .rootcause-card, .tls-card, .power-card, .sim-panel, .stat-card {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(30, 41, 59, 0.7) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    transition: all 0.3s ease;
+}
+
+.health-card:hover, .rootcause-card:hover, .power-card:hover, .sim-panel:hover {
+    border-color: rgba(34, 211, 238, 0.3) !important;
+    box-shadow: 0 8px 32px rgba(34, 211, 238, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Glow effect on health score */
+.health-number {
+    text-shadow: 0 0 30px rgba(34, 211, 238, 0.4);
+    transition: text-shadow 0.5s ease;
+}
+
+.health-card:hover .health-number {
+    text-shadow: 0 0 50px rgba(34, 211, 238, 0.6);
+}
+
+/* Animated gradient border for active tab */
+.tab-btn.active {
+    background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(52, 211, 153, 0.15)) !important;
+    border-color: rgba(34, 211, 238, 0.4) !important;
+    box-shadow: 0 0 15px rgba(34, 211, 238, 0.15);
+}
+
+/* Pulse animation for diagnostic running */
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(34, 211, 238, 0.2); }
+    50% { box-shadow: 0 0 20px rgba(34, 211, 238, 0.4); }
+}
+
+.btn-diagnose:active, .btn-stress:active {
+    animation: pulse-glow 0.5s ease;
+}
+
+/* Smooth entrance animations */
+@keyframes slideInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.health-section, .timeline-section, .rootcause-section, .chart-section,
+.portscan-section, .tls-section, .traceroute-section, .benchmark-section,
+.ping-section, .healthmon-section, .stress-section, .history-section,
+.power-section {
+    animation: slideInUp 0.4s ease-out;
+}
+
+/* Layer card hover effects */
+.layer-card {
+    transition: all 0.3s ease;
+    cursor: default;
+}
+
+.layer-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.layer-card.ok {
+    border-left: 3px solid var(--green);
+}
+
+.layer-card.failed {
+    border-left: 3px solid var(--red);
+}
+
+.layer-card.warning {
+    border-left: 3px solid var(--orange);
+}
+
+/* Timeline connector glow */
+.tl-dot {
+    transition: all 0.3s ease;
+}
+
+.timeline-item.active .tl-dot {
+    box-shadow: 0 0 12px rgba(34, 211, 238, 0.6);
+}
+
+/* Stat card number counter effect */
+.stat-value {
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover .stat-value {
+    transform: scale(1.05);
+}
+
+/* Button ripple effect */
+.btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translate(-50%, -50%);
+    transition: width 0.4s, height 0.4s;
+}
+
+.btn:active::after {
+    width: 200px;
+    height: 200px;
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* Focus ring for accessibility */
+.target-input:focus, .target-input:focus-visible {
+    outline: none;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+}
+
+/* Toast notification */
+.toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--card);
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 0.85rem;
+    color: var(--text);
+    z-index: 1000;
+    opacity: 0;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(12px);
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Print styles for export */
+@media print {
+    .header, .tab-nav, .target-section, .btn, nav, footer { display: none !important; }
+    .main { padding: 0 !important; }
+    .health-card, .rootcause-card, .power-card { 
+        break-inside: avoid;
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+    }
+    body { background: white !important; color: black !important; }
+}

@@ -1599,3 +1599,54 @@ body.light .btn { color: var(--text-primary); }
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+
+/* ===== PREMIUM VISUAL EFFECTS ===== */
+
+.health-card, .rootcause-card, .tls-card, .power-card, .sim-panel, .stat-card {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(30, 41, 59, 0.7) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    transition: all 0.3s ease;
+}
+
+.health-card:hover, .rootcause-card:hover, .power-card:hover, .sim-panel:hover {
+    border-color: rgba(34, 211, 238, 0.3) !important;
+    box-shadow: 0 8px 32px rgba(34, 211, 238, 0.1);
+    transform: translateY(-2px);
+}
+
+.health-number {
+    text-shadow: 0 0 30px rgba(34, 211, 238, 0.4);
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(52, 211, 153, 0.15)) !important;
+    box-shadow: 0 0 15px rgba(34, 211, 238, 0.15);
+}
+
+@keyframes slideInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.health-section, .timeline-section, .rootcause-section, .chart-section,
+.portscan-section, .tls-section, .power-section {
+    animation: slideInUp 0.4s ease-out;
+}
+
+.layer-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+.layer-card.ok { border-left: 3px solid var(--green); }
+.layer-card.failed { border-left: 3px solid var(--red); }
+.layer-card.warning { border-left: 3px solid var(--orange); }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.target-input:focus { outline: none; border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(34,211,238,0.15); }
+
+@media print {
+    .header, .tab-nav, .target-section, .btn, nav, footer { display: none !important; }
+    body { background: white !important; color: black !important; }
+}
