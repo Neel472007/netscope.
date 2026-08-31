@@ -59,9 +59,9 @@
             health: {
                 score: score, status: status, message: message,
                 layers: [
-                    { layer: 'DNS', status: dnsMs > 50 ? 'warn' : 'ok', latency_ms: dnsMs * 1000000, message: dnsMs > 50 ? 'DNS resolution is slow' : '' },
-                    { layer: 'TCP', status: tcpMs > 100 ? 'warn' : 'ok', latency_ms: tcpMs * 1000000, message: tcpMs > 100 ? 'TCP latency is elevated' : '' },
-                    { layer: 'HTTP', status: httpMs > 300 ? 'warn' : 'ok', latency_ms: httpMs * 1000000, message: httpMs > 300 ? 'HTTP response time is elevated' : '' }
+                    { layer: 'DNS', status: dnsMs > 50 ? 'warning' : 'ok', latency: dnsMs + ' ms', message: dnsMs > 50 ? 'DNS resolution is slow' : '' },
+                    { layer: 'TCP', status: tcpMs > 100 ? 'warning' : 'ok', latency: tcpMs + ' ms', message: tcpMs > 100 ? 'TCP latency is elevated' : '' },
+                    { layer: 'HTTP', status: httpMs > 300 ? 'warning' : 'ok', latency: httpMs + ' ms', message: httpMs > 300 ? 'HTTP response time is elevated' : '' }
                 ],
                 root_cause: { root_cause: rootCause, severity: severity, confidence: confidence / 100, affected_layer: severity === 'info' ? 'None' : 'HTTP', evidence: 'DNS: ' + dnsMs + ' ms, TCP: ' + tcpMs + ' ms, HTTP: ' + httpMs + ' ms', recommendation: recommendation }
             }
