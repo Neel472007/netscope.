@@ -24,7 +24,7 @@ go build ./cmd/netscope && ./netscope serve --tls
 
 ---
 
-## 🏆 Why NetScope Wins
+## 🏆 Why NetScope
 
 | Feature | NetScope | Typical Hackathon Project |
 |---------|----------|---------------------------|
@@ -153,37 +153,6 @@ NetScope is a zero-runtime-dependency network diagnostics and observability plat
    └─────────┘
 ```
 
----
-
-## 📊 API Endpoints (30+)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | Server health check |
-| GET | `/api/diagnose?target=...` | Full diagnostics |
-| GET | `/api/stream?target=...` | SSE streaming |
-| GET | `/api/dns?host=...` | DNS resolution |
-| GET | `/api/tcp?host=...&port=...` | TCP connectivity |
-| GET | `/api/http?url=...` | HTTP diagnostic |
-| GET | `/api/portscan?host=...&ports=...` | Port scanning |
-| GET | `/api/tls?host=...` | TLS inspection |
-| GET | `/api/benchmark?host=...` | Network benchmark |
-| GET | `/api/traceroute?host=...` | Network traceroute |
-| GET | `/api/ping?host=...&count=...` | Ping session |
-| GET | `/api/ping/stream?host=...` | Live ping stream |
-| GET | `/api/packetflow?target=...` | Packet flow trace |
-| GET | `/api/fingerprint?target=...` | Network fingerprint |
-| GET | `/api/correlation?target=...` | Causality chain |
-| GET | `/api/report?target=...` | Executive report |
-| POST | `/api/stress?confirm=yes` | Stress test |
-| POST | `/api/simulator` | Set failure mode |
-| GET | `/api/history?limit=...` | Diagnostic history |
-| GET | `/api/export` | Export JSON report |
-| GET | `/api/audit?limit=...` | Security audit log |
-| GET | `/api/csrf-token` | Get CSRF token |
-
----
-
 ## 🧪 Testing
 
 ```bash
@@ -274,43 +243,14 @@ netscope/
 └── start.sh                      # Linux/Mac launcher
 ```
 
----
-
-## 🎬 Demo Script (3 Minutes)
-
-### Minute 1: Core Diagnostics
-1. Start NetScope: `go run ./cmd/netscope serve`
-2. Open dashboard at `http://localhost:8199`
-3. Diagnose `example.com` → Show health score 93/100
-4. Show DNS/TCP/HTTP layer cards with real latencies
-5. Show root cause: "Network is healthy, 100% confidence"
-
-### Minute 2: Advanced Features
-6. Run Packet Flow on `google.com` → Show timing breakdown
-7. Run Network Fingerprint → Show "Cloudflare CDN identified"
-8. Run Smart Correlation → Show causality chain DNS→TCP→HTTP
-9. Set baseline, run diff → Show comparison
-
-### Minute 3: Failure Detection
-10. Click ⚡ Simulator → "Break TCP"
-11. Diagnose simulator → Show TCP failure detected
-12. Show root cause: "TCP connection failed"
-13. Generate Executive Report → Download HTML
-14. **Closing**: "Zero dependencies, 12MB binary, real measurements"
-
----
-
 ## 📜 Compliance
 
 | Rule | Status |
 |------|--------|
-| Teams 1-4 members | ✅ |
-| Code written during 72hr hackathon | ✅ |
 | Zero third-party runtime dependencies | ✅ |
 | Single build command | ✅ |
 | No copied third-party source | ✅ |
 | Public GitHub repo | ✅ |
-| Track C — Web & Network | ✅ |
 | MIT License | ✅ |
 | AI assistants allowed | ✅ |
 | STDLIB.md discloses dev deps | ✅ |
