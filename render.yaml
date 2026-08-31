@@ -1,9 +1,0 @@
-services:
-  - type: web
-    name: netscope
-    runtime: go
-    buildCommand: go build -o netscope ./cmd/netscope
-    startCommand: ./netscope serve
-    envVars:
-      - key: GO_VERSION
-        value: "1.21"
