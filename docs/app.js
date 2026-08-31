@@ -58,6 +58,7 @@
         }).then(function () {
             // Server is up — all good.
         }).catch(function () {
+        if (window.__MOCK_MODE) return;
             document.body.insertAdjacentHTML('afterbegin',
                 '<div id="serverWarning" style="background:#7f1d1d;border:1px solid #ef4444;border-radius:8px;padding:20px;margin:20px;color:#fca5a5;font-family:sans-serif;position:relative;z-index:200;">' +
                 '<strong style="font-size:16px;">⚠️ NetScope server is not responding</strong><br><br>' +

@@ -1,0 +1,16 @@
+.git
+.gitignore
+*.exe
+*.exe~
+*.md
+!README.md
+LICENSE
+COMPLIANCE.md
+STDLIB.md
+.freebuff/
+start.bat
+start.sh
+render.yaml
+docs/presentation.html
+docs/NetScope-Hackathon-Pitch.pdf
+tmp/
