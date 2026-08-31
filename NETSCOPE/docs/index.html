@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetScope — Network Diagnostics & Failure Intelligence</title>
+    <meta name="description" content="Find where the network breaks, why it breaks, and prove it with real measurements. Zero-dependency DNS, TCP, HTTP diagnostics with live dashboard.">
+    <meta property="og:title" content="NetScope — Network Diagnostics">
+    <meta property="og:description" content="Real-time network diagnostics platform. DNS, TCP, HTTP, port scanning, TLS inspection, traceroute, and more — zero dependencies.">
+    <meta property="og:type" content="website">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔬</text></svg>">
+    <link rel="stylesheet" href="style.css">
+    <style>.standalone-banner{background:#3b82f6;color:#fff;text-align:center;padding:8px;font-size:13px;position:fixed;top:0;left:0;right:0;z-index:200;}.standalone-banner a{color:#fff;font-weight:600;}</style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="brand">
+                <h1 class="brand-name">NETSCOPE</h1>
+                <span class="brand-tag">Network Diagnostics &amp; Failure Intelligence</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-theme" id="btnTheme" title="Toggle dark/light theme">🌙</button>
+                <button class="btn btn-sim" id="btnSimulator" title="Failure Simulator">⚡ Simulator</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <!-- Tab Navigation -->
+        <nav class="tab-nav" id="tabNav">
+            <button class="tab-btn active" data-tab="diagnose">🎯 Diagnose</button>
+            <button class="tab-btn" data-tab="tools">🔧 Tools</button>
+            <button class="tab-btn" data-tab="monitor">📡 Monitor</button>
+            <button class="tab-btn" data-tab="intel">🧠 Intelligence</button>
+            <button class="tab-btn" data-tab="sim">⚡ Simulator</button>
+        </nav>
+
+        <!-- Target Input -->
+        <section class="target-section">
+            <div class="target-input-wrap">
+                <input type="text" id="targetInput" class="target-input" 
+                       placeholder="Enter target: example.com, https://example.com, 1.2.3.4:443"
+                       autocomplete="off" spellcheck="false">
+                <button class="btn btn-diagnose" id="btnDiagnose">
+                    <span class="btn-text">Diagnose</span>
+                    <span class="btn-spinner" id="btnSpinner" style="display:none;">⟳</span>
+                </button>
+            </div>
+            <div class="target-examples">
+                <span class="example-label">Try:</span>
+                <button class="btn btn-example" data-target="example.com">example.com</button>
+                <button class="btn btn-example" data-target="https://httpbin.org/get">httpbin.org</button>
+                <button class="btn btn-example" data-target="google.com">google.com</button>
+                <button class="btn btn-example" data-target="1.1.1.1">1.1.1.1</button>
+            </div>
+        </section>
+
+        <!-- Health Score Card -->
+        <section class="health-section" id="healthSection" style="display:none;">
+            <div class="health-card">
+                <div class="health-score" id="healthScore">
+                    <div class="health-number" id="healthNumber">0</div>
+                    <div class="health-max">/ 100</div>
+                </div>
+                <div class="health-status" id="healthStatus">UNKNOWN</div>
+                <div class="health-message" id="healthMessage"></div>
+            </div>
+
+            <!-- Layer Cards -->
+            <div class="layers">
+                <div class="layer-card" id="layerDNS">
+                    <div class="layer-name">DNS</div>
+                    <div class="layer-status" id="layerDNSStatus">—</div>
+                    <div class="layer-latency" id="layerDNSLatency"></div>
+                    <div class="layer-message" id="layerDNSMsg"></div>
+                </div>
+                <div class="layer-card" id="layerTCP">
+                    <div class="layer-name">TCP</div>
+                    <div class="layer-status" id="layerTCPStatus">—</div>
+                    <div class="layer-latency" id="layerTCPLatency"></div>
+                    <div class="layer-message" id="layerTCPMsg"></div>
+                </div>
+                <div class="layer-card" id="layerHTTP">
+                    <div class="layer-name">HTTP</div>
+                    <div class="layer-status" id="layerHTTPStatus">—</div>
+                    <div class="layer-latency" id="layerHTTPLatency"></div>
+                    <div class="layer-message" id="layerHTTPMsg"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Diagnostic Timeline -->
+        <section class="timeline-section" id="timelineSection" style="display:none;">
+            <h2 class="section-title">Diagnostic Timeline</h2>
+            <div class="timeline" id="timeline">
+                <div class="timeline-item" id="tlDNS">
+                    <div class="tl-dot"></div>
+                    <div class="tl-content">
+                        <div class="tl-label">DNS Resolution</div>
+                        <div class="tl-detail" id="tlDNSDetail">Waiting...</div>
+                    </div>
+                </div>
+                <div class="timeline-connector"></div>
+                <div class="timeline-item" id="tlTCP">
+                    <div class="tl-dot"></div>
+                    <div class="tl-content">
+                        <div class="tl-label">TCP Connection</div>
+                        <div class="tl-detail" id="tlTCPDetail">Waiting...</div>
+                    </div>
+                </div>
+                <div class="timeline-connector"></div>
+                <div class="timeline-item" id="tlHTTP">
+                    <div class="tl-dot"></div>
+                    <div class="tl-content">
+                        <div class="tl-label">HTTP Request</div>
+                        <div class="tl-detail" id="tlHTTPDetail">Waiting...</div>
+                    </div>
+                </div>
+                <div class="timeline-connector"></div>
+                <div class="timeline-item" id="tlAnalysis">
+                    <div class="tl-dot"></div>
+                    <div class="tl-content">
+                        <div class="tl-label">Analysis</div>
+                        <div class="tl-detail" id="tlAnalysisDetail">Waiting...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Root Cause Panel -->
+        <section class="rootcause-section" id="rootcauseSection" style="display:none;">
+            <h2 class="section-title">Root Cause Analysis</h2>
+            <div class="rootcause-card" id="rootcauseCard">
+                <div class="rc-severity" id="rcSeverity">INFO</div>
+                <div class="rc-cause" id="rcCause">No issues detected</div>
+                <div class="rc-confidence" id="rcConfidence">Confidence: 100%</div>
+                <div class="rc-evidence" id="rcEvidence"></div>
+                <div class="rc-recommendation" id="rcRecommendation"></div>
+            </div>
+        </section>
+
+        <!-- Latency Visualization -->
+        <section class="chart-section" id="chartSection" style="display:none;">
+            <h2 class="section-title">Latency Breakdown</h2>
+            <div class="chart-container">
+                <canvas id="latencyChart" width="600" height="300"></canvas>
+            </div>
+        </section>
+
+        <!-- Port Scanner -->
+        <section class="portscan-section">
+            <h2 class="section-title">🔍 Port Scanner</h2>
+            <div class="portscan-controls">
+                <input type="text" id="portscanHost" class="target-input" placeholder="Host to scan (e.g. example.com)" style="max-width:300px;">
+                <input type="text" id="portscanPorts" class="target-input" placeholder="Ports (comma-separated, or leave empty for common ports)" style="max-width:400px;">
+                <button class="btn btn-diagnose" id="btnPortScan">Scan Ports</button>
+            </div>
+            <div class="portscan-results" id="portscanResults" style="display:none;">
+                <div class="stress-grid">
+                    <div class="stat-card"><div class="stat-value" id="psTotal">0</div><div class="stat-label">Scanned</div></div>
+                    <div class="stat-card stat-success"><div class="stat-value" id="psOpen">0</div><div class="stat-label">Open</div></div>
+                    <div class="stat-card stat-fail"><div class="stat-value" id="psClosed">0</div><div class="stat-label">Closed</div></div>
+                    <div class="stat-card"><div class="stat-value" id="psDuration">0ms</div><div class="stat-label">Duration</div></div>
+                </div>
+                <div class="portscan-table-wrap">
+                    <table class="portscan-table" id="portscanTable">
+                        <thead><tr><th>Port</th><th>Service</th><th>Status</th><th>Latency</th></tr></thead>
+                        <tbody id="portscanTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TLS Inspector -->
+        <section class="tls-section">
+            <h2 class="section-title">🔒 TLS Certificate Inspector</h2>
+            <div class="tls-controls">
+                <input type="text" id="tlsHost" class="target-input" placeholder="Host (e.g. example.com)" style="max-width:300px;">
+                <button class="btn btn-diagnose" id="btnTLS">Inspect TLS</button>
+            </div>
+            <div class="tls-results" id="tlsResults" style="display:none;">
+                <div class="tls-card">
+                    <div class="tls-header">
+                        <div class="tls-subject" id="tlsSubject">—</div>
+                        <div class="tls-validity" id="tlsValidity">—</div>
+                    </div>
+                    <div class="tls-details">
+                        <div class="tls-row"><span class="tls-label">Issuer</span><span id="tlsIssuer">—</span></div>
+                        <div class="tls-row"><span class="tls-label">Protocol</span><span id="tlsProtocol">—</span></div>
+                        <div class="tls-row"><span class="tls-label">Cipher Suite</span><span id="tlsCipher">—</span></div>
+                        <div class="tls-row"><span class="tls-label">Key</span><span id="tlsKey">—</span></div>
+                        <div class="tls-row"><span class="tls-label">Signature</span><span id="tlsSig">—</span></div>
+                        <div class="tls-row"><span class="tls-label">Expires</span><span id="tlsExpiry">—</span></div>
+                        <div class="tls-row"><span class="tls-label">Chain</span><span id="tlsChain">—</span></div>
+                        <div class="tls-row"><span class="tls-label">SANs</span><span id="tlsSANs">—</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Traceroute -->
+        <section class="traceroute-section">
+            <h2 class="section-title">🌐 Traceroute</h2>
+            <div class="traceroute-controls">
+                <input type="text" id="traceHost" class="target-input" placeholder="Host (e.g. example.com, 8.8.8.8)" style="max-width:300px;">
+                <button class="btn btn-diagnose" id="btnTrace">Trace Route</button>
+            </div>
+            <div class="traceroute-results" id="traceResults" style="display:none;">
+                <div class="stress-grid">
+                    <div class="stat-card"><div class="stat-value" id="traceHops">0</div><div class="stat-label">Hops</div></div>
+                    <div class="stat-card stat-success"><div class="stat-value" id="traceCompleted">No</div><div class="stat-label">Completed</div></div>
+                    <div class="stat-card"><div class="stat-value" id="traceResolvedIP">—</div><div class="stat-label">Target IP</div></div>
+                    <div class="stat-card"><div class="stat-value" id="traceDuration">0ms</div><div class="stat-label">Duration</div></div>
+                </div>
+                <div class="trace-route-viz" id="traceViz"></div>
+                <div class="topology-container" id="topologyContainer" style="display:none;">
+                    <h3 style="font-size:0.85rem;color:var(--text-muted);margin:16px 0 8px;">🌐 Network Topology</h3>
+                    <div class="topology-wrap" id="topologyWrap">
+                        <svg id="topologySVG" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 340" width="100%" height="340"></svg>
+                    </div>
+                    <div class="topo-legend" id="topoLegend"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Network Benchmark -->
+        <section class="benchmark-section">
+            <h2 class="section-title">📊 Network Quality Benchmark</h2>
+            <div class="benchmark-controls">
+                <input type="text" id="benchHost" class="target-input" placeholder="Host (e.g. example.com)" style="max-width:200px;">
+                <input type="number" id="benchPort" value="443" min="1" max="65535" style="width:80px; padding:10px; border:1px solid var(--border); border-radius:8px;">
+                <input type="number" id="benchRounds" value="20" min="5" max="100" style="width:80px; padding:10px; border:1px solid var(--border); border-radius:8px;">
+                <button class="btn btn-diagnose" id="btnBench">Run Benchmark</button>
+            </div>
+            <div class="benchmark-results" id="benchResults" style="display:none;">
+                <div class="bench-grade-card">
+                    <div class="bench-grade" id="benchGrade">—</div>
+                    <div class="bench-score" id="benchScore">—</div>
+                </div>
+                <div class="stress-grid">
+                    <div class="stat-card"><div class="stat-value" id="benchSuccess">0</div><div class="stat-label">Successful</div></div>
+                    <div class="stat-card stat-fail"><div class="stat-value" id="benchFailed">0</div><div class="stat-label">Failed</div></div>
+                    <div class="stat-card"><div class="stat-value" id="benchLoss">0%</div><div class="stat-label">Packet Loss</div></div>
+                    <div class="stat-card"><div class="stat-value" id="benchAvg">0ms</div><div class="stat-label">Avg RTT</div></div>
+                    <div class="stat-card"><div class="stat-value" id="benchMin">0ms</div><div class="stat-label">Min RTT</div></div>
+                    <div class="stat-card"><div class="stat-value" id="benchMax">0ms</div><div class="stat-label">Max RTT</div></div>
+                    <div class="stat-card"><div class="stat-value" id="benchP50">0ms</div><div class="stat-label">P50</div></div>
+                    <div class="stat-card"><div class="stat-value" id="benchP95">0ms</div><div class="stat-label">P95</div></div>
+                    <div class="stat-card"><div class="stat-value" id="benchJitter">0ms</div><div class="stat-label">Jitter</div></div>
+                    <div class="stat-card"><div class="stat-value" id="benchConsistency">0%</div><div class="stat-label">Consistency</div></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Real-Time Ping Monitor -->
+        <section class="ping-section">
+            <h2 class="section-title">🏓 Real-Time Ping Monitor</h2>
+            <div class="ping-controls">
+                <input type="text" id="pingHost" class="target-input" placeholder="Host (e.g. example.com)" style="max-width:200px;">
+                <input type="number" id="pingPort" value="80" min="1" max="65535" style="width:80px; padding:10px; border:1px solid var(--border); border-radius:8px;">
+                <input type="number" id="pingCount" value="30" min="5" max="200" style="width:80px; padding:10px; border:1px solid var(--border); border-radius:8px;">
+                <input type="number" id="pingInterval" value="1000" min="200" max="5000" style="width:100px; padding:10px; border:1px solid var(--border); border-radius:8px;" title="Interval (ms)">
+                <button class="btn btn-diagnose" id="btnPing">Start Ping</button>
+                <button class="btn btn-stress" id="btnPingStop" style="display:none;">Stop</button>
+            </div>
+
+            <!-- Live Ping Stats -->
+            <div class="ping-stats" id="pingStats" style="display:none;">
+                <div class="ping-stat-card">
+                    <div class="ping-stat-value" id="pingSent">0</div>
+                    <div class="ping-stat-label">Sent</div>
+                </div>
+                <div class="ping-stat-card">
+                    <div class="ping-stat-value" id="pingReceived">0</div>
+                    <div class="ping-stat-label">Received</div>
+                </div>
+                <div class="ping-stat-card ping-stat-fail">
+                    <div class="ping-stat-value" id="pingLost">0%</div>
+                    <div class="ping-stat-label">Packet Loss</div>
+                </div>
+                <div class="ping-stat-card">
+                    <div class="ping-stat-value" id="pingAvgRTT">0ms</div>
+                    <div class="ping-stat-label">Avg RTT</div>
+                </div>
+                <div class="ping-stat-card">
+                    <div class="ping-stat-value" id="pingMinRTT">0ms</div>
+                    <div class="ping-stat-label">Min</div>
+                </div>
+                <div class="ping-stat-card">
+                    <div class="ping-stat-value" id="pingMaxRTT">0ms</div>
+                    <div class="ping-stat-label">Max</div>
+                </div>
+                <div class="ping-stat-card">
+                    <div class="ping-stat-value" id="pingJitter">0ms</div>
+                    <div class="ping-stat-label">Jitter</div>
+                </div>
+                <div class="ping-stat-card">
+                    <div class="ping-stat-value" id="pingP95">0ms</div>
+                    <div class="ping-stat-label">P95</div>
+                </div>
+            </div>
+
+            <!-- Live Latency Chart -->
+            <div class="chart-container" id="pingChartWrap" style="display:none;">
+                <canvas id="pingChart" width="800" height="250"></canvas>
+            </div>
+
+            <!-- Ping Log -->
+            <div class="ping-log" id="pingLog" style="display:none;">
+                <div class="ping-log-header">
+                    <span>Sequence</span><span>RTT</span><span>Status</span>
+                </div>
+                <div class="ping-log-entries" id="pingLogEntries"></div>
+            </div>
+        </section>
+
+        <!-- Continuous Health Monitor -->
+        <section class="healthmon-section">
+            <h2 class="section-title">🛡️ Continuous Health Monitor</h2>
+            <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:12px;">Continuously pings a target and alerts when latency spikes are detected. Uses adaptive thresholds based on your network's baseline.</p>
+            <div class="healthmon-controls">
+                <input type="text" id="hmHost" class="target-input" placeholder="Host (e.g. example.com)" style="max-width:200px;font-size:0.85rem;">
+                <input type="number" id="hmPort" value="80" min="1" max="65535" style="width:70px;padding:10px;border:1px solid var(--border);border-radius:8px;">
+                <input type="number" id="hmInterval" value="1000" min="200" max="5000" style="width:90px;padding:10px;border:1px solid var(--border);border-radius:8px;" title="Probe interval (ms)">
+                <input type="number" id="hmThreshold" value="500" min="50" max="10000" style="width:90px;padding:10px;border:1px solid var(--border);border-radius:8px;" title="Spike threshold (ms)">
+                <button class="btn btn-diagnose" id="btnHMStart">▶ Start Monitoring</button>
+                <button class="btn btn-stress" id="btnHMStop" style="display:none;">⏹ Stop</button>
+            </div>
+
+            <!-- Status Bar -->
+            <div class="hm-status-bar" id="hmStatusBar" style="display:none;">
+                <div class="hm-status-dot" id="hmStatusDot"></div>
+                <span class="hm-status-text" id="hmStatusText">Initializing...</span>
+                <span class="hm-status-uptime" id="hmUptime"></span>
+            </div>
+
+            <!-- Live Stats -->
+            <div class="hm-stats" id="hmStats" style="display:none;">
+                <div class="ping-stat-card">
+                    <div class="ping-stat-value" id="hmProbes">0</div>
+                    <div class="ping-stat-label">Probes</div>
+                </div>
+                <div class="ping-stat-card">
+                    <div class="ping-stat-value" id="hmSuccess">0</div>
+                    <div class="ping-stat-label">Success</div>
+                </div>
+                <div class="ping-stat-card ping-stat-fail">
+                    <div class="ping-stat-value" id="hmLoss">0%</div>
+                    <div class="ping-stat-label">Loss</div>
+                </div>
+                <div class="ping-stat-card">
+                    <div class="ping-stat-value" id="hmAvgRTT">0ms</div>
+                    <div class="ping-stat-label">Avg RTT</div>
+                </div>
+                <div class="ping-stat-card">
+                    <div class="ping-stat-value" id="hmCurrentRTT">0ms</div>
+                    <div class="ping-stat-label">Current</div>
+                </div>
+                <div class="ping-stat-card">
+                    <div class="ping-stat-value" id="hmThresholdVal">—</div>
+                    <div class="ping-stat-label">Threshold</div>
+                </div>
+                <div class="ping-stat-card">
+                    <div class="ping-stat-value" id="hmSpikes">0</div>
+                    <div class="ping-stat-label">Spikes</div>
+                </div>
+                <div class="ping-stat-card">
+                    <div class="ping-stat-value" id="hmJitter">0ms</div>
+                    <div class="ping-stat-label">Jitter</div>
+                </div>
+            </div>
+
+            <!-- Live Latency Chart -->
+            <div class="chart-container" id="hmChartWrap" style="display:none;">
+                <canvas id="hmChart" width="800" height="220"></canvas>
+            </div>
+
+            <!-- Spike Alert Log -->
+            <div class="hm-alerts" id="hmAlerts" style="display:none;">
+                <div class="hm-alerts-header">
+                    <span>🚨 Spike Alerts</span>
+                    <span class="hm-alerts-count" id="hmAlertsCount">0 alerts</span>
+                </div>
+                <div class="hm-alerts-list" id="hmAlertsList"></div>
+            </div>
+        </section>
+
+        <!-- Stress Test -->
+        <section class="stress-section">
+            <h2 class="section-title">Stress Test</h2>
+            <div class="stress-controls">
+                <div class="control-group">
+                    <label for="stressConns">Connections</label>
+                    <select id="stressConns">
+                        <option value="10">10</option>
+                        <option value="50">50</option>
+                        <option value="100" selected>100</option>
+                        <option value="500">500</option>
+                        <option value="1000">1000</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="stressDuration">Duration (s)</label>
+                    <select id="stressDuration">
+                        <option value="3">3</option>
+                        <option value="5" selected>5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="stressPort">Port</label>
+                    <input type="number" id="stressPort" value="443" min="1" max="65535" style="width:80px;">
+                </div>
+                <button class="btn btn-stress" id="btnStress">Run Stress Test</button>
+            </div>
+            <div class="stress-results" id="stressResults" style="display:none;">
+                <div class="stress-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stressTotal">0</div>
+                        <div class="stat-label">Total Requests</div>
+                    </div>
+                    <div class="stat-card stat-success">
+                        <div class="stat-value" id="stressSuccess">0</div>
+                        <div class="stat-label">Successful</div>
+                    </div>
+                    <div class="stat-card stat-fail">
+                        <div class="stat-value" id="stressFailed">0</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stressRPS">0</div>
+                        <div class="stat-label">Req/sec</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stressP50">0</div>
+                        <div class="stat-label">P50 (ms)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stressP95">0</div>
+                        <div class="stat-label">P95 (ms)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stressP99">0</div>
+                        <div class="stat-label">P99 (ms)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stressAvg">0</div>
+                        <div class="stat-label">Avg (ms)</div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="stressChart" width="600" height="200"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Simulator Panel -->
+        <section class="simulator-section" id="simulatorSection" style="display:block;">
+            <h2 class="section-title">⚡ Failure Simulator</h2>
+            <div class="sim-panel">
+                <p class="sim-info">Control the local simulator to demonstrate NetScope's diagnostic capabilities. The simulator runs on <code id="simAddr">localhost:8200</code>.</p>
+                <div class="sim-controls">
+                    <button class="btn btn-sim-mode" data-mode="normal">✅ Normal</button>
+                    <button class="btn btn-sim-mode" data-mode="break_dns">❌ Break DNS</button>
+                    <button class="btn btn-sim-mode" data-mode="break_tcp">❌ Break TCP</button>
+                    <button class="btn btn-sim-mode" data-mode="break_http">❌ Break HTTP</button>
+                    <button class="btn btn-sim-mode" data-mode="add_latency">🐌 Add Latency</button>
+                    <button class="btn btn-sim-mode" data-mode="http_errors">⚠️ HTTP Errors</button>
+                    <button class="btn btn-sim-mode" data-mode="timeout">⏳ Timeout</button>
+                </div>
+                <div class="sim-latency" id="simLatencyCtrl" style="display:none;">
+                    <label for="simLatency">Latency (ms):</label>
+                    <input type="number" id="simLatency" value="2000" min="100" max="30000">
+                </div>
+                <div class="sim-current" id="simCurrentState">Current mode: normal</div>
+                <div class="sim-tip">
+                    <p>💡 Try diagnosing <code id="simTarget"></code> after changing the simulator mode to see how NetScope detects different failure types.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Load Balancer Simulator -->
+        <section class="lbsim-section" id="lbsimSection" style="display:block;">
+            <h2 class="section-title">⚖️ Load Balancer Simulator</h2>
+            <div class="sim-panel">
+                <p class="sim-info">Real-time load balancer with health checking and failover. The LB runs on <code id="lbAddr">localhost:8080</code>. Use NetScope to diagnose the LB endpoint and observe how backend failures affect service availability.</p>
+                
+                <!-- LB Stats -->
+                <div class="lb-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="lbTotalReqs">0</div>
+                        <div class="stat-label">Total Requests</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="lbActive">0</div>
+                        <div class="stat-label">Active Clients</div>
+                    </div>
+                    <div class="stat-card stat-fail">
+                        <div class="stat-value" id="lbFailed">0</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="lbUptime">0:00:00</div>
+                        <div class="stat-label">Uptime</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="lbSecurity">SECURE</div>
+                        <div class="stat-label">Security Level</div>
+                    </div>
+                </div>
+
+                <!-- Backend Nodes -->
+                <div class="lb-nodes" id="lbNodes">
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Loading backend nodes...</p>
+                </div>
+
+                <!-- LB Notifications -->
+                <div class="lb-notifications" id="lbNotifications" style="display:none;">
+                    <h3 style="font-size: 0.85rem; font-weight: 700; margin: 0 0 8px 0; color: var(--text-secondary);">Notifications</h3>
+                    <div id="lbNotifList"></div>
+                </div>
+
+                <div class="sim-tip" style="margin-top: 16px;">
+                    <p>💡 Click <strong>CRASH TEST</strong> on a backend to simulate failure. Then diagnose <code id="lbDiagTarget">http://localhost:8080/lb/</code> with NetScope to see the impact.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- History & Comparison -->
+        <section class="history-section">
+            <h2 class="section-title">📈 Diagnostic History</h2>
+            <div class="history-controls">
+                <button class="btn btn-diagnose" id="btnExport" style="background:var(--green);border-color:var(--green);">📥 Export Report</button>
+            </div>
+            <div class="history-chart-wrap" id="historyChartWrap">
+                <canvas id="historyChart" width="600" height="200"></canvas>
+            </div>
+            <div class="history-table-wrap" id="historyTableWrap" style="display:none;">
+                <table class="portscan-table" id="historyTable">
+                    <thead><tr><th>Target</th><th>Score</th><th>Status</th><th>Time</th></tr></thead>
+                    <tbody id="historyTableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Multi-Target Comparison -->
+            <div class="comparison-section" id="comparisonSection" style="margin-top:20px;">
+                <h3 style="font-size:0.85rem;color:var(--text-muted);margin-bottom:8px;">⚖️ Compare Targets</h3>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <input type="text" id="compareTargets" class="target-input" placeholder="e.g. google.com,cloudflare.com" style="max-width:350px;font-size:0.85rem;">
+                    <button class="btn btn-diagnose" id="btnCompare" style="font-size:0.8rem;">Compare</button>
+                </div>
+                <div id="compareResults" style="display:none;margin-top:12px;">
+                    <table class="portscan-table">
+                        <thead><tr><th>Target</th><th>Score</th><th>Status</th><th>DNS</th><th>TCP</th><th>HTTP</th></tr></thead>
+                        <tbody id="compareTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Advanced Intelligence Section -->
+        <section class="power-section">
+            <h2 class="section-title">🧠 Advanced Intelligence</h2>
+
+            <!-- Packet Flow Diagram -->
+            <div class="power-card">
+                <h3>📦 Packet Flow Diagram</h3>
+                <p style="color:var(--text-muted);font-size:0.85rem;">Trace the complete connection journey: DNS → TCP → TLS → HTTP — with exact timing for each step.</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center;">
+                    <input type="text" id="pfTarget" class="target-input" placeholder="Target (e.g. example.com)" style="max-width:250px;font-size:0.85rem;">
+                    <input type="number" id="pfPort" value="443" min="1" max="65535" style="width:70px;padding:10px;border:1px solid var(--border);border-radius:8px;">
+                    <button class="btn btn-diagnose" id="btnPacketFlow">Trace Flow</button>
+                </div>
+                <div id="pfResults" style="display:none;margin-top:12px;">
+                    <div class="pf-timeline" id="pfTimeline"></div>
+                    <div id="pfSummary" style="margin-top:10px;padding:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:monospace;color:var(--text-secondary);"></div>
+                </div>
+            </div>
+
+            <!-- Network Fingerprint -->
+            <div class="power-card">
+                <h3>🔬 Network Fingerprint</h3>
+                <p style="color:var(--text-muted);font-size:0.85rem;">Identify CDN, hosting provider, WAF, server software, and infrastructure behind a target.</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center;">
+                    <input type="text" id="fpTarget" class="target-input" placeholder="Target (e.g. example.com)" style="max-width:250px;font-size:0.85rem;">
+                    <button class="btn btn-diagnose" id="btnFingerprint">Fingerprint</button>
+                </div>
+                <div id="fpResults" style="display:none;margin-top:12px;">
+                    <div id="fpScore" style="margin-bottom:8px;"></div>
+                    <div id="fpFindings"></div>
+                </div>
+            </div>
+
+            <!-- Diagnostic Diff -->
+            <div class="power-card">
+                <h3>🔄 Diagnostic Diff Mode</h3>
+                <p style="color:var(--text-muted);font-size:0.85rem;">Set a baseline, then compare later to see exactly what changed — DNS, TCP, HTTP, latency shifts.</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center;">
+                    <input type="text" id="diffTarget" class="target-input" placeholder="Target (e.g. example.com)" style="max-width:250px;font-size:0.85rem;">
+                    <button class="btn btn-diagnose" id="btnSetBaseline" style="font-size:0.8rem;">📌 Set Baseline</button>
+                    <button class="btn btn-diagnose" id="btnDiff" style="font-size:0.8rem;">🔄 Compare Now</button>
+                </div>
+                <div id="diffResults" style="display:none;margin-top:12px;"></div>
+            </div>
+
+            <!-- Smart Correlation -->
+            <div class="power-card">
+                <h3>🔗 Smart Causality Chain</h3>
+                <p style="color:var(--text-muted);font-size:0.85rem;">Analyze how failures cascade: DNS → TCP → HTTP with root cause identification and correlation.</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center;">
+                    <input type="text" id="corrTarget" class="target-input" placeholder="Target (e.g. example.com)" style="max-width:250px;font-size:0.85rem;">
+                    <button class="btn btn-diagnose" id="btnCorrelation">Analyze Chain</button>
+                </div>
+                <div id="corrResults" style="display:none;margin-top:12px;"></div>
+            </div>
+
+            <!-- Executive Report -->
+            <div class="power-card">
+                <h3>📄 Executive Report</h3>
+                <p style="color:var(--text-muted);font-size:0.85rem;">Generate a self-contained HTML report with findings, charts, and recommendations — shareable as a single file.</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center;">
+                    <input type="text" id="rptTarget" class="target-input" placeholder="Target (e.g. example.com)" style="max-width:250px;font-size:0.85rem;">
+                    <button class="btn btn-diagnose" id="btnReport" style="font-size:0.8rem;">📥 Generate Report</button>
+                </div>
+                <div id="rptStatus" style="display:none;margin-top:8px;font-size:0.85rem;color:var(--green);"></div>
+            </div>
+        </section>
+
+        <!-- Power Features -->
+        <section class="power-section">
+            <h2 class="section-title">⚡ Power Features</h2>
+
+            <!-- Network Overview -->
+            <div class="power-card">
+                <h3>🔍 Network Overview</h3>
+                <p style="color:var(--text-muted);font-size:0.85rem;">Run all diagnostics in parallel — DNS, TCP, HTTP, TLS, benchmark, port scan — and get a unified score.</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center;">
+                    <input type="text" id="overviewHost" class="target-input" placeholder="Host (e.g. example.com)" style="max-width:250px;font-size:0.85rem;">
+                    <button class="btn btn-diagnose" id="btnOverview">Full Scan</button>
+                </div>
+                <div id="overviewResults" style="display:none;margin-top:12px;">
+                    <div class="stress-grid" style="grid-template-columns:repeat(3,1fr);">
+                        <div class="stat-card"><div class="stat-value" id="ovScore">0</div><div class="stat-label">Score</div></div>
+                        <div class="stat-card"><div class="stat-value" id="ovOverall">—</div><div class="stat-label">Status</div></div>
+                        <div class="stat-card"><div class="stat-value" id="ovPorts">0</div><div class="stat-label">Open Ports</div></div>
+                        <div class="stat-card"><div class="stat-value" id="ovTCP">—</div><div class="stat-label">TCP</div></div>
+                        <div class="stat-card"><div class="stat-value" id="ovHTTP">—</div><div class="stat-label">HTTP</div></div>
+                        <div class="stat-card"><div class="stat-value" id="ovBench">—</div><div class="stat-label">Benchmark</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DNS Resolver Race -->
+            <div class="power-card">
+                <h3>🏁 DNS Resolver Race</h3>
+                <p style="color:var(--text-muted);font-size:0.85rem;">Test 14 public DNS resolvers simultaneously and find the fastest one for your network.</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center;">
+                    <input type="text" id="dnsRaceHost" class="target-input" placeholder="Host (e.g. example.com)" style="max-width:250px;font-size:0.85rem;">
+                    <button class="btn btn-diagnose" id="btnDNSRace">Start Race</button>
+                </div>
+                <div id="dnsRaceResults" style="display:none;margin-top:12px;">
+                    <div id="dnsRaceWinner" style="padding:10px;background:var(--bg-card);border:2px solid var(--green);border-radius:8px;margin-bottom:8px;font-size:0.9rem;"></div>
+                    <div id="dnsRaceTable"></div>
+                </div>
+            </div>
+
+            <!-- Speed Test -->
+            <div class="power-card">
+                <h3>🚀 Speed Test</h3>
+                <p style="color:var(--text-muted);font-size:0.85rem;">Measure download throughput with multiple rounds, jitter analysis, and letter grading.</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center;">
+                    <button class="btn btn-diagnose" id="btnSpeedTest">Run Speed Test</button>
+                </div>
+                <div id="speedResults" style="display:none;margin-top:12px;">
+                    <div class="stress-grid" style="grid-template-columns:repeat(3,1fr);">
+                        <div class="stat-card"><div class="stat-value" id="speedGrade">—</div><div class="stat-label">Grade</div></div>
+                        <div class="stat-card"><div class="stat-value" id="speedAvg">—</div><div class="stat-label">Avg Speed</div></div>
+                        <div class="stat-card"><div class="stat-value" id="speedMax">—</div><div class="stat-label">Max Speed</div></div>
+                        <div class="stat-card"><div class="stat-value" id="speedJitter">—</div><div class="stat-label">Jitter</div></div>
+                        <div class="stat-card"><div class="stat-value" id="speedLatency">—</div><div class="stat-label">Latency</div></div>
+                        <div class="stat-card"><div class="stat-value" id="speedLoss">—</div><div class="stat-label">Packet Loss</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WHOIS Lookup -->
+            <div class="power-card">
+                <h3>📋 WHOIS Lookup</h3>
+                <p style="color:var(--text-muted);font-size:0.85rem;">Query domain registration info — registrar, expiration, name servers, DNSSEC status.</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center;">
+                    <input type="text" id="whoisDomain" class="target-input" placeholder="Domain (e.g. example.com)" style="max-width:250px;font-size:0.85rem;">
+                    <button class="btn btn-diagnose" id="btnWhois">Lookup</button>
+                </div>
+                <div id="whoisResults" style="display:none;margin-top:12px;">
+                    <div id="whoisData" style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:0.85rem;"></div>
+                </div>
+            </div>
+
+            <!-- Multi-Target Scan -->
+            <div class="power-card">
+                <h3>🌐 Multi-Target Scan</h3>
+                <p style="color:var(--text-muted);font-size:0.85rem;">Diagnose multiple hosts concurrently and compare their health side by side.</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center;">
+                    <input type="text" id="multiScanHosts" class="target-input" placeholder="Hosts (comma-separated, e.g. google.com,cloudflare.com,dns.works)" style="max-width:400px;font-size:0.85rem;">
+                    <button class="btn btn-diagnose" id="btnMultiScan">Scan All</button>
+                </div>
+                <div id="multiScanResults" style="display:none;margin-top:12px;">
+                    <table class="portscan-table">
+                        <thead><tr><th>Host</th><th>Score</th><th>Status</th><th>DNS</th><th>TCP</th><th>HTTP</th><th>Ports</th></tr></thead>
+                        <tbody id="multiScanBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- API Quick Reference -->
+        <section class="api-section">
+            <h2 class="section-title">🔌 API Quick Reference</h2>
+            <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:12px;">Click any endpoint to copy as cURL. All endpoints return JSON.</p>
+            <div class="api-grid" id="apiGrid">
+                <div class="api-endpoint" onclick="copyCurl('/api/diagnose?target=example.com')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/diagnose</span>
+                    <span class="api-desc">Full diagnosis</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/dns?host=example.com')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/dns</span>
+                    <span class="api-desc">DNS resolution</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/dns/doh?host=example.com&provider=cloudflare')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/dns/doh</span>
+                    <span class="api-desc">DNS-over-HTTPS</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/tcp?host=example.com&port=443')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/tcp</span>
+                    <span class="api-desc">TCP connectivity</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/http?url=https://example.com')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/http</span>
+                    <span class="api-desc">HTTP diagnostics</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/portscan?host=example.com')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/portscan</span>
+                    <span class="api-desc">Port scanner</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/tls?host=example.com')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/tls</span>
+                    <span class="api-desc">TLS inspection</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/benchmark?host=example.com&port=443')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/benchmark</span>
+                    <span class="api-desc">Network benchmark</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/ping?host=example.com&port=80&count=10')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/ping</span>
+                    <span class="api-desc">Ping monitor</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/traceroute?host=example.com')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/traceroute</span>
+                    <span class="api-desc">Traceroute</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/export?limit=10')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/export</span>
+                    <span class="api-desc">Export report</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/history?limit=20')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/history</span>
+                    <span class="api-desc">History</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/health')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/health</span>
+                    <span class="api-desc">Health check</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/overview?target=example.com')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/overview</span>
+                    <span class="api-desc">Full network overview</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/whois?domain=example.com')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/whois</span>
+                    <span class="api-desc">WHOIS lookup</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/speedtest?rounds=5')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/speedtest</span>
+                    <span class="api-desc">Download speed test</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/dnsrace?host=example.com')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/dnsrace</span>
+                    <span class="api-desc">DNS resolver race</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/multiscan?hosts=google.com,cloudflare.com')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/multiscan</span>
+                    <span class="api-desc">Multi-target scan</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/healthmon?host=example.com')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/healthmon</span>
+                    <span class="api-desc">Health monitor</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/packetflow?target=example.com')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/packetflow</span>
+                    <span class="api-desc">Packet flow trace</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/fingerprint?target=example.com')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/fingerprint</span>
+                    <span class="api-desc">Network fingerprint</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/correlation?target=example.com')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/correlation</span>
+                    <span class="api-desc">Causality chain</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/report?target=example.com')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/report</span>
+                    <span class="api-desc">Executive report</span>
+                </div>
+                <div class="api-endpoint" onclick="copyCurl('/api/diff?target=example.com')">
+                    <span class="api-method get">GET</span>
+                    <span class="api-path">/api/diff</span>
+                    <span class="api-desc">Diagnostic diff</span>
+                </div>
+            </div>
+            <div id="curlCopied" style="display:none;margin-top:8px;padding:8px 12px;background:#166534;color:#bbf7d0;border-radius:6px;font-size:0.8rem;font-family:monospace;">✓ Copied to clipboard!</div>
+        </section>
+
+        <!-- Live Activity Log -->
+        <section class="activity-section" id="activitySection" style="display:none;">
+            <h2 class="section-title">Live Activity</h2>
+            <div class="activity-log" id="activityLog"></div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>NetScope v1.0 — Zero runtime dependencies — Built with Go standard library &amp; vanilla JS</p>
+    </footer>
+
+    <script src="app.js?v=2"></script>
+</body>
+</html>
